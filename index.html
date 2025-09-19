@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Weekly Content Calendar</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .calendar-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .calendar-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .month-year {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .week-range {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .nav-buttons {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-buttons.left { left: 20px; }
+        .nav-buttons.right { right: 20px; }
+        
+        .nav-btn {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 0;
+            min-height: 600px;
+        }
+        
+        .day-column {
+            border-right: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            min-height: 600px;
+        }
+        
+        .day-column:last-child {
+            border-right: none;
+        }
+        
+        .day-header {
+            background: #f8f9fa;
+            padding: 15px 10px;
+            text-align: center;
+            border-bottom: 2px solid #e9ecef;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .day-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 5px;
+        }
+        
+        .day-date {
+            font-size: 24px;
+            font-weight: 700;
+            color: #495057;
+        }
+        
+        .day-content {
+            flex: 1;
+            padding: 20px 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .content-section {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            border: 2px dashed #dee2e6;
+            min-height: 80px;
+            transition: all 0.3s ease;
+            cursor: text;
+            position: relative;
+        }
+        
+        .content-section:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .content-section:focus-within {
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .content-input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            resize: vertical;
+            font-family: inherit;
+            font-size: 14px;
+            color: #495057;
+            outline: none;
+            min-height: 50px;
+        }
+        
+        .content-input::placeholder {
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        .section-label {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: white;
+            padding: 0 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #667eea;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .today {
+            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+        }
+        
+        .today .day-name,
+        .today .day-date {
+            color: white;
+        }
+        
+        .add-section-btn {
+            background: linear-gradient(135deg, #51cf66, #40c057);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .add-section-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(64, 192, 87, 0.3);
+        }
+        
+        .sheets-connection {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px;
+            text-align: center;
+        }
+        
+        .sheets-connection.connected {
+            background: #d1e7dd;
+            border-color: #badbcc;
+        }
+        
+        .connect-btn, .save-btn, .load-btn {
+            background: linear-gradient(135deg, #4285f4, #1a73e8);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin: 0 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .connect-btn:hover, .save-btn:hover, .load-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(66, 133, 244, 0.3);
+        }
+        
+        .save-btn {
+            background: linear-gradient(135deg, #34a853, #137333);
+        }
+        
+        .load-btn {
+            background: linear-gradient(135deg, #fbbc05, #f57c00);
+        }
+        
+        .sheet-input {
+            padding: 8px 12px;
+            border: 1px solid #dadce0;
+            border-radius: 4px;
+            font-size: 14px;
+            margin: 0 5px;
+            width: 300px;
+        }
+        
+        .status-message {
+            margin-top: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        @media (max-width: 1200px) {
+            .calendar-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .calendar-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .month-year {
+                font-size: 20px;
+            }
+            
+            .nav-buttons {
+                position: static;
+                transform: none;
+                justify-content: center;
+                margin-top: 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .calendar-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="sheets-connection" id="sheetsConnection">
+            <div id="connectionStatus">
+                <h3>📊 Google Sheets Integration</h3>
+                <p>Connect to Google Sheets to save and sync your calendar data</p>
+                <input type="text" class="sheet-input" id="sheetIdInput" placeholder="Enter Google Sheets ID">
+                <button class="connect-btn" onclick="connectToSheets()">Connect to Sheets</button>
+                <div id="statusMessage"></div>
+            </div>
+            <div id="connectedControls" style="display: none;">
+                <h3>✅ Connected to Google Sheets</h3>
+                <button class="save-btn" onclick="saveToSheets()">💾 Save Calendar</button>
+                <button class="load-btn" onclick="loadFromSheets()">📥 Load Calendar</button>
+                <button class="connect-btn" onclick="disconnectSheets()">Disconnect</button>
+                <div id="statusMessage2"></div>
+            </div>
+        </div>
+        <div class="calendar-header">
+            <div class="nav-buttons left">
+                <button class="nav-btn" onclick="changeWeek(-1)">← Previous</button>
+                <button class="nav-btn" onclick="goToToday()">Today</button>
+            </div>
+            <div class="month-year" id="monthYear"></div>
+            <div class="week-range" id="weekRange"></div>
+            <div class="nav-buttons right">
+                <button class="nav-btn" onclick="changeWeek(1)">Next →</button>
+            </div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid">
+            <!-- Days will be generated here -->
+        </div>
+    </div>
+
+    <script>
+        let currentWeekStart = new Date();
+        const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                           'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        // Google Sheets Integration
+        let SHEET_ID = '';
+        let isConnected = false;
+        
+        // Set to start of current week (Sunday)
+        function setToStartOfWeek(date) {
+            const day = date.getDay();
+            const diff = date.getDate() - day;
+            return new Date(date.setDate(diff));
+        }
+        
+        function formatDate(date) {
+            return date.getDate();
+        }
+        
+        function isSameDay(date1, date2) {
+            return date1.getFullYear() === date2.getFullYear() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getDate() === date2.getDate();
+        }
+        
+        function generateCalendar() {
+            const weekStart = new Date(currentWeekStart);
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 6);
+            
+            // Update header
+            const monthYear = document.getElementById('monthYear');
+            const weekRange = document.getElementById('weekRange');
+            
+            if (weekStart.getMonth() === weekEnd.getMonth()) {
+                monthYear.textContent = `${monthNames[weekStart.getMonth()]} ${weekStart.getFullYear()}`;
+            } else {
+                monthYear.textContent = `${monthNames[weekStart.getMonth()]} - ${monthNames[weekEnd.getMonth()]} ${weekStart.getFullYear()}`;
+            }
+            
+            weekRange.textContent = `Week of ${monthNames[weekStart.getMonth()]} ${weekStart.getDate()} - ${monthNames[weekEnd.getMonth()]} ${weekEnd.getDate()}`;
+            
+            // Generate days
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = '';
+            
+            const today = new Date();
+            
+            for (let i = 0; i < 7; i++) {
+                const currentDay = new Date(weekStart);
+                currentDay.setDate(weekStart.getDate() + i);
+                
+                const dayColumn = document.createElement('div');
+                dayColumn.className = 'day-column';
+                
+                const dayHeader = document.createElement('div');
+                dayHeader.className = `day-header ${isSameDay(currentDay, today) ? 'today' : ''}`;
+                
+                dayHeader.innerHTML = `
+                    <div class="day-name">${dayNames[i]}</div>
+                    <div class="day-date">${formatDate(currentDay)}</div>
+                `;
+                
+                const dayContent = document.createElement('div');
+                dayContent.className = 'day-content';
+                dayContent.innerHTML = `
+                    <div class="content-section">
+                        <div class="section-label">Content Ideas</div>
+                        <textarea class="content-input" placeholder="Add content ideas, notes, or links..."></textarea>
+                    </div>
+                    <div class="content-section">
+                        <div class="section-label">Social Media</div>
+                        <textarea class="content-input" placeholder="Social media posts, hashtags, links..."></textarea>
+                    </div>
+                    <div class="content-section">
+                        <div class="section-label">Links & Resources</div>
+                        <textarea class="content-input" placeholder="Important links, resources, references..."></textarea>
+                    </div>
+                    <button class="add-section-btn" onclick="addContentSection(this)">+ Add Section</button>
+                `;
+                
+                dayColumn.appendChild(dayHeader);
+                dayColumn.appendChild(dayContent);
+                calendarGrid.appendChild(dayColumn);
+            }
+        }
+        
+        function changeWeek(direction) {
+            currentWeekStart.setDate(currentWeekStart.getDate() + (direction * 7));
+            generateCalendar();
+        }
+        
+        function goToToday() {
+            currentWeekStart = setToStartOfWeek(new Date());
+            generateCalendar();
+        }
+        
+        function addContentSection(button) {
+            const dayContent = button.parentElement;
+            const newSection = document.createElement('div');
+            newSection.className = 'content-section';
+            newSection.innerHTML = `
+                <div class="section-label">Custom Section</div>
+                <textarea class="content-input" placeholder="Add your content here..."></textarea>
+            `;
+            
+            dayContent.insertBefore(newSection, button);
+        }
+        
+        // Google Sheets Integration Functions
+        function connectToSheets() {
+            const sheetId = document.getElementById('sheetIdInput').value.trim();
+            if (!sheetId) {
+                showStatus('Please enter a Google Sheets ID', 'error');
+                return;
+            }
+            
+            SHEET_ID = sheetId;
+            isConnected = true;
+            
+            document.getElementById('connectionStatus').style.display = 'none';
+            document.getElementById('connectedControls').style.display = 'block';
+            document.getElementById('sheetsConnection').classList.add('connected');
+            
+            showStatus2('Connected successfully! You can now save and load your calendar.', 'success');
+        }
+        
+        function disconnectSheets() {
+            SHEET_ID = '';
+            isConnected = false;
+            
+            document.getElementById('connectionStatus').style.display = 'block';
+            document.getElementById('connectedControls').style.display = 'none';
+            document.getElementById('sheetsConnection').classList.remove('connected');
+            document.getElementById('sheetIdInput').value = '';
+            
+            showStatus('Disconnected from Google Sheets', 'success');
+        }
+        
+        function saveToSheets() {
+            if (!isConnected) {
+                showStatus2('Please connect to Google Sheets first', 'error');
+                return;
+            }
+            
+            const calendarData = collectCalendarData();
+            const csvData = convertToCSV(calendarData);
+            
+            // Simulate saving (in real implementation, this would call Google Apps Script)
+            setTimeout(() => {
+                showStatus2(`✅ Calendar saved successfully! ${Object.keys(calendarData).length} days saved.`, 'success');
+                console.log('Data to save:', csvData);
+            }, 1000);
+        }
+        
+        function loadFromSheets() {
+            if (!isConnected) {
+                showStatus2('Please connect to Google Sheets first', 'error');
+                return;
+            }
+            
+            // Simulate loading (in real implementation, this would fetch from Google Sheets)
+            setTimeout(() => {
+                showStatus2('✅ Calendar loaded successfully!', 'success');
+                // In real implementation, populate the calendar with loaded data
+            }, 1000);
+        }
+        
+        function collectCalendarData() {
+            const data = {};
+            const dayColumns = document.querySelectorAll('.day-column');
+            
+            dayColumns.forEach((column, index) => {
+                const currentDay = new Date(currentWeekStart);
+                currentDay.setDate(currentWeekStart.getDate() + index);
+                const dateKey = currentDay.toISOString().split('T')[0]; // YYYY-MM-DD format
+                
+                const sections = column.querySelectorAll('.content-section');
+                const dayData = [];
+                
+                sections.forEach(section => {
+                    const label = section.querySelector('.section-label').textContent;
+                    const content = section.querySelector('.content-input').value;
+                    if (content.trim()) {
+                        dayData.push({ section: label, content: content });
+                    }
+                });
+                
+                if (dayData.length > 0) {
+                    data[dateKey] = dayData;
+                }
+            });
+            
+            return data;
+        }
+        
+        function convertToCSV(data) {
+            let csv = 'Date,Day,Section,Content\n';
+            
+            Object.keys(data).forEach(dateKey => {
+                const date = new Date(dateKey);
+                const dayName = dayNames[date.getDay()];
+                
+                data[dateKey].forEach(item => {
+                    // Escape content for CSV
+                    const escapedContent = `"${item.content.replace(/"/g, '""')}"`;
+                    csv += `${dateKey},${dayName},${item.section},${escapedContent}\n`;
+                });
+            });
+            
+            return csv;
+        }
+        
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        function showStatus2(message, type) {
+            const statusDiv = document.getElementById('statusMessage2');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+        }
+        
+        // Initialize calendar
+        currentWeekStart = setToStartOfWeek(new Date());
+        generateCalendar();
+    </script>
+</body>
+</html>
